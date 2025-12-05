@@ -6,20 +6,24 @@ import {
   TrendingUp, 
   BookOpen, 
   MapPin, 
-  DollarSign, 
-  ArrowRight,
-  BrainCircuit,
-  Loader2,
-  FileText,
-  Search,
-  AlertCircle,
-  X,
-  File
+  Coins, 
+  ArrowRight, 
+  BrainCircuit, 
+  Loader2, 
+  FileText, 
+  Search, 
+  AlertCircle, 
+  X, 
+  File,
+  ExternalLink,
+  Share2,
+  ChevronRight
 } from './components/Icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { MOCK_JOBS, INITIAL_RESUME_TEXT } from './constants';
 import { parseResume, matchJobs } from './services/geminiService';
 import { Job, CandidateProfile, MatchResult } from './types';
+import mammoth from 'mammoth';
 
 // --- Components ---
 
@@ -92,7 +96,15 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
   const [resumeText, setResumeText] = useState(INITIAL_RESUME_TEXT);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [stage, setStage] = useState<'idle' | 'parsing' | 'matching'>('idle');
-  const [selectedFile, setSelectedFile] = useState<{ name: string; data: string; mimeType: string } | null>(null);
+  
+  // State to store file details including optional extracted text for non-PDF files
+  const [selectedFile, setSelectedFile] = useState<{ 
+    name: string; 
+    data?: string; 
+    mimeType: string; 
+    extractedText?: string; 
+  } | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,18 +116,61 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Remove base64 prefix for API: "data:application/pdf;base64,"
-      const base64Data = result.split(',')[1];
-      setSelectedFile({
-        name: file.name,
-        data: base64Data,
-        mimeType: file.type
-      });
-    };
-    reader.readAsDataURL(file);
+    // Reset previous selection
+    setSelectedFile(null);
+    setStage('idle');
+
+    // Handle PDF (Native Gemini Support)
+    if (file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove base64 prefix: "data:application/pdf;base64,"
+        const base64Data = result.split(',')[1];
+        setSelectedFile({
+          name: file.name,
+          data: base64Data,
+          mimeType: file.type
+        });
+      };
+      reader.readAsDataURL(file);
+    } 
+    // Handle DOCX (Convert to Text via Mammoth)
+    else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx')) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const arrayBuffer = event.target?.result as ArrayBuffer;
+        try {
+          // Extract text from DOCX
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          setSelectedFile({
+            name: file.name,
+            mimeType: file.type,
+            extractedText: result.value // The raw text
+          });
+        } catch (error) {
+          console.error("Error reading Word file:", error);
+          alert("Failed to read the Word document. Please ensure it is a valid .docx file.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    // Handle Text Files
+    else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+       const reader = new FileReader();
+       reader.onload = (event) => {
+         const text = event.target?.result as string;
+         setSelectedFile({
+           name: file.name,
+           mimeType: 'text/plain',
+           extractedText: text
+         });
+       };
+       reader.readAsText(file);
+    }
+    else {
+      alert("Unsupported file type. Please upload PDF, Word (.docx), or TXT.");
+    }
   };
 
   const clearFile = () => {
@@ -129,10 +184,21 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
     setStage('parsing');
 
     try {
-      // 1. Parse Resume (File or Text)
-      const input = selectedFile 
-        ? { file: { data: selectedFile.data, mimeType: selectedFile.mimeType } }
-        : { text: resumeText };
+      // 1. Prepare Input
+      // If we have extracted text (from DOCX or TXT), send it as text.
+      // If we have a PDF, send the base64 data.
+      let input;
+      if (selectedFile) {
+        if (selectedFile.extractedText) {
+           input = { text: `FileName: ${selectedFile.name}\n\n${selectedFile.extractedText}` };
+        } else if (selectedFile.data) {
+           input = { file: { data: selectedFile.data, mimeType: selectedFile.mimeType } };
+        } else {
+           throw new Error("Invalid file state");
+        }
+      } else {
+        input = { text: resumeText };
+      }
         
       const profile = await parseResume(input);
       setStage('matching');
@@ -168,16 +234,19 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
                 onClick={() => fileInputRef.current?.click()}
                 className="cursor-pointer group relative border-2 border-dashed border-gray-300 rounded-xl p-8 transition-all hover:border-brand-500 hover:bg-brand-50 flex flex-col items-center justify-center text-center"
               >
-                <div className="bg-blue-50 p-3 rounded-full mb-3 group-hover:bg-white group-hover:scale-110 transition-transform">
-                  <UploadCloud className="w-6 h-6 text-brand-600" />
+                <div className="bg-blue-50 p-4 rounded-full mb-4 group-hover:bg-white group-hover:scale-110 transition-transform shadow-sm">
+                  <UploadCloud className="w-8 h-8 text-brand-600" />
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Click to upload or drag and drop</h3>
-                <p className="text-xs text-gray-500">PDF, DOCX, TXT up to 5MB</p>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">Click to upload or drag and drop</h3>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>Supported formats: <span className="font-medium text-gray-700">PDF, Word (.docx), TXT</span></p>
+                  <p>Maximum file size: <span className="font-medium text-gray-700">5MB</span></p>
+                </div>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
-                  accept=".pdf,.doc,.docx,.txt"
+                  accept=".pdf,.docx,.txt"
                   className="hidden" 
                 />
               </div>
@@ -250,6 +319,36 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
   );
 };
 
+const MatchScore = ({ score }: { score: number }) => {
+  const isHigh = score >= 80;
+  const isMedium = score >= 50 && score < 80;
+  
+  return (
+    <div className="relative w-16 h-16 flex items-center justify-center">
+      <svg className="w-full h-full" viewBox="0 0 36 36">
+        <path
+          className="text-gray-200"
+          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+        />
+        <path
+          className={`${isHigh ? 'text-green-500' : isMedium ? 'text-yellow-500' : 'text-red-500'} transition-all duration-1000 ease-out`}
+          strokeDasharray={`${score}, 100`}
+          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center">
+        <span className="text-sm font-bold text-gray-700">{score}%</span>
+      </div>
+    </div>
+  );
+};
+
 const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidateProfile, matches: MatchResult[], onReset: () => void }) => {
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(matches[0] || null);
   const [activeTab, setActiveTab] = useState<'overview' | 'upskill'>('overview');
@@ -264,208 +363,282 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
   })).slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-brand-900 text-white pb-32 pt-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Sticky Header */}
+      <div className="bg-brand-900 text-white shadow-lg sticky top-16 z-30">
+        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-brand-800 p-2 rounded-full hidden md:block">
+              <Briefcase className="w-5 h-5 text-brand-200" />
+            </div>
             <div>
-              <h2 className="text-3xl font-bold mb-2">Hello, Candidate</h2>
-              <p className="text-brand-100 max-w-xl text-sm leading-relaxed opacity-90">{profile.summary}</p>
-            </div>
-            <button onClick={onReset} className="text-sm bg-brand-800 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors">
-              Analyze New CV
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
-              <div className="text-brand-100 text-xs uppercase tracking-wider font-semibold mb-1">Top Role Match</div>
-              <div className="text-2xl font-bold">{profile.suggestedRoles[0]}</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
-              <div className="text-brand-100 text-xs uppercase tracking-wider font-semibold mb-1">Experience Detected</div>
-              <div className="text-2xl font-bold">{profile.yearsExperience} Years</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
-              <div className="text-brand-100 text-xs uppercase tracking-wider font-semibold mb-1">Skills Identified</div>
-              <div className="text-2xl font-bold">{profile.extractedSkills.length} Skills</div>
+              <h2 className="text-lg font-bold">Top Match: {profile.suggestedRoles[0]}</h2>
+              <p className="text-brand-200 text-xs">{profile.extractedSkills.length} skills identified • {profile.yearsExperience} years exp</p>
             </div>
           </div>
+          <button onClick={onReset} className="text-sm bg-brand-800/50 hover:bg-brand-700 border border-brand-700 px-4 py-2 rounded-lg transition-colors">
+            Analyze New CV
+          </button>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-180px)]">
           
-          {/* Left Column: Match List */}
-          <div className="lg:col-span-1 space-y-4">
-            <h3 className="text-white font-semibold mb-4 px-2">Matched Opportunities</h3>
-            {sortedMatches.map((match) => {
-              const job = MOCK_JOBS.find(j => j.id === match.jobId);
-              if (!job) return null;
-              const isSelected = selectedMatch?.jobId === match.jobId;
-              
-              return (
-                <div 
-                  key={match.jobId}
-                  onClick={() => setSelectedMatch(match)}
-                  className={`
-                    cursor-pointer p-4 rounded-xl border transition-all duration-200
-                    ${isSelected 
-                      ? 'bg-white border-brand-500 ring-2 ring-brand-500/20 shadow-lg' 
-                      : 'bg-white border-gray-100 hover:border-brand-200 hover:shadow-md opacity-95'}
-                  `}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-gray-900">{job.title}</h4>
-                    <span className={`
-                      text-xs font-bold px-2 py-1 rounded-full
-                      ${match.matchScore > 80 ? 'bg-green-100 text-green-700' : 
-                        match.matchScore > 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+          {/* Left Column: Job List (Scrollable) */}
+          <div className="lg:col-span-4 flex flex-col h-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+               <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                 <Search className="w-4 h-4 text-brand-600" />
+                 Matched Opportunities
+               </h3>
+               <p className="text-xs text-gray-500 mt-1">Ranked by AI compatibility score</p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+              {sortedMatches.map((match, index) => {
+                const job = MOCK_JOBS.find(j => j.id === match.jobId);
+                if (!job) return null;
+                const isSelected = selectedMatch?.jobId === match.jobId;
+                
+                return (
+                  <div 
+                    key={match.jobId}
+                    onClick={() => { setSelectedMatch(match); setActiveTab('overview'); }}
+                    className={`
+                      relative cursor-pointer p-4 rounded-xl border transition-all duration-200 group flex items-center gap-4
+                      ${isSelected 
+                        ? 'bg-brand-50 border-brand-500 shadow-sm' 
+                        : 'bg-white border-transparent hover:bg-gray-50 hover:border-gray-200'}
+                    `}
+                  >
+                    {/* Rank Badge */}
+                    <div className={`
+                      flex flex-col items-center justify-center w-8 h-8 rounded-full text-xs font-bold shrink-0
+                      ${index === 0 ? 'bg-sa-gold text-white' : index === 1 ? 'bg-gray-300 text-white' : 'bg-gray-100 text-gray-500'}
                     `}>
-                      {match.matchScore}% Match
-                    </span>
+                      #{index + 1}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`font-bold text-sm truncate ${isSelected ? 'text-brand-700' : 'text-gray-900'}`}>
+                        {job.title}
+                      </h4>
+                      <p className="text-xs text-gray-500 truncate">{job.company}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center gap-1">
+                           <MapPin className="w-3 h-3"/> {job.location.split(',')[0]}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className={`text-lg font-bold ${match.matchScore >= 80 ? 'text-green-600' : match.matchScore >= 50 ? 'text-yellow-600' : 'text-red-500'}`}>
+                        {match.matchScore}%
+                      </div>
+                      <div className="text-[10px] text-gray-400">Match</div>
+                    </div>
+                    
+                    {isSelected && (
+                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-brand-500 rounded-r-xl"></div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">{job.company}</p>
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {job.location}</span>
-                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3"/> {job.salaryRange}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
-          {/* Right Column: Detailed View */}
-          <div className="lg:col-span-2">
+          {/* Right Column: Detailed View (Scrollable) */}
+          <div className="lg:col-span-8 h-full overflow-y-auto custom-scrollbar rounded-2xl shadow-xl border border-gray-100 bg-white">
             {selectedMatch && selectedJob ? (
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedJob.title}</h2>
-                    <p className="text-gray-600">{selectedJob.company} • {selectedJob.location}</p>
+              <div className="relative">
+                {/* Job Hero */}
+                <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100 p-6 md:p-8 flex flex-col md:flex-row justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                       <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-brand-700 text-xs font-bold border border-blue-100">
+                         {selectedJob.type}
+                       </span>
+                       <span className="px-2.5 py-0.5 rounded-full bg-gray-50 text-gray-600 text-xs font-medium border border-gray-100 flex items-center gap-1">
+                         <Coins className="w-3 h-3" /> {selectedJob.salaryRange}
+                       </span>
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
+                    <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
+                      <Briefcase className="w-4 h-4" /> {selectedJob.company}
+                      <span className="text-gray-300">•</span>
+                      <MapPin className="w-4 h-4" /> {selectedJob.location}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => setActiveTab('overview')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'overview' ? 'bg-brand-100 text-brand-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                      Overview
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('upskill')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'upskill' ? 'bg-brand-100 text-brand-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                      Skill Gap & Training
-                    </button>
+                  
+                  <div className="flex items-center gap-4">
+                     <MatchScore score={selectedMatch.matchScore} />
+                     <a 
+                       href={selectedJob.applicationUrl} 
+                       target="_blank" 
+                       rel="noreferrer"
+                       className="hidden md:flex flex-col items-center justify-center bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-brand-500/25 group"
+                     >
+                       <span className="flex items-center gap-2">
+                         Apply Now <ExternalLink className="w-4 h-4" />
+                       </span>
+                       <span className="text-[10px] opacity-80 font-normal">Opens in new tab</span>
+                     </a>
                   </div>
                 </div>
+                
+                {/* Mobile Apply Button (only visible on small screens) */}
+                <div className="md:hidden p-4 border-b border-gray-100">
+                   <a 
+                     href={selectedJob.applicationUrl} 
+                     target="_blank" 
+                     rel="noreferrer"
+                     className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white py-3 rounded-xl font-bold shadow-md"
+                   >
+                     Apply Now <ExternalLink className="w-4 h-4" />
+                   </a>
+                </div>
 
-                <div className="p-8 min-h-[500px]">
+                {/* Tabs */}
+                <div className="bg-gray-50/50 px-6 pt-4 border-b border-gray-200 flex gap-6 overflow-x-auto">
+                  <button 
+                    onClick={() => setActiveTab('overview')}
+                    className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap
+                      ${activeTab === 'overview' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}
+                    `}
+                  >
+                    <BrainCircuit className="w-4 h-4" /> Match Analysis
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('upskill')}
+                    className={`pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap
+                      ${activeTab === 'upskill' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}
+                    `}
+                  >
+                    <TrendingUp className="w-4 h-4" /> Skill Gap & Courses
+                  </button>
+                </div>
+
+                <div className="p-6 md:p-8 min-h-[500px]">
                   {activeTab === 'overview' ? (
-                    <div className="space-y-6 animate-fadeIn">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                          <BrainCircuit className="w-5 h-5 text-brand-500" />
-                          AI Analysis
+                    <div className="space-y-8 animate-fadeIn">
+                      {/* AI Reasoning */}
+                      <div className="bg-gradient-to-br from-brand-50 to-white p-6 rounded-2xl border border-brand-100 shadow-sm">
+                        <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <span className="bg-brand-100 p-1.5 rounded-md"><BrainCircuit className="w-4 h-4 text-brand-600"/></span>
+                          Why you're a match
                         </h3>
-                        <p className="text-gray-600 bg-brand-50 p-4 rounded-xl text-sm leading-relaxed border border-brand-100">
+                        <p className="text-gray-700 text-sm leading-relaxed">
                           {selectedMatch.reasoning}
                         </p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Skill Profile</h3>
-                          <div className="h-48 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={skillsData} layout="vertical">
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
-                                <Tooltip cursor={{fill: 'transparent'}} />
-                                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                                  {skillsData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill="#0ea5e9" />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                        <div>
-                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Requirements</h3>
-                           <div className="flex flex-wrap gap-2">
-                              {selectedJob.requiredSkills.map(skill => (
-                                <span key={skill} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                                  {skill}
-                                </span>
-                              ))}
-                           </div>
-                           <div className="mt-6">
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Description</h4>
-                              <p className="text-sm text-gray-600">{selectedJob.description}</p>
-                           </div>
-                        </div>
-                      </div>
+                         {/* Job Description */}
+                         <div>
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b pb-2">Job Description</h3>
+                            <p className="text-gray-600 text-sm leading-7">
+                              {selectedJob.description}
+                            </p>
+                         </div>
 
-                      <div className="pt-6 border-t border-gray-100">
-                         <button className="w-full bg-brand-600 text-white font-semibold py-4 rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20">
-                           Apply Now via Kusasa
-                         </button>
+                         {/* Skills Visualization */}
+                         <div>
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b pb-2">Skill Requirements</h3>
+                            <div className="flex flex-wrap gap-2 mb-6">
+                              {selectedJob.requiredSkills.map(skill => {
+                                const hasSkill = !selectedMatch.missingSkills.includes(skill);
+                                return (
+                                  <span key={skill} className={`
+                                    px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5
+                                    ${hasSkill 
+                                      ? 'bg-green-50 text-green-700 border-green-200' 
+                                      : 'bg-gray-50 text-gray-500 border-gray-200 opacity-60'}
+                                  `}>
+                                    {hasSkill ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-400"></div>}
+                                    {skill}
+                                  </span>
+                                );
+                              })}
+                            </div>
+
+                            <h4 className="text-xs font-bold text-gray-500 mb-3">Your Profile Strength</h4>
+                            <div className="h-40 w-full bg-white rounded-lg border border-gray-100 p-2">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={skillsData} layout="vertical" margin={{ left: 0 }}>
+                                  <XAxis type="number" hide domain={[0, 100]} />
+                                  <YAxis dataKey="name" type="category" width={90} tick={{fontSize: 10, fill: '#64748b'}} interval={0} />
+                                  <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                  <Bar dataKey="value" barSize={12} radius={[0, 4, 4, 0]}>
+                                    {skillsData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill="#0ea5e9" />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-8 animate-fadeIn">
+                       {/* Missing Skills Alert */}
                        <div>
-                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                         <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <AlertCircle className="w-5 h-5 text-amber-500" />
-                            Missing Critical Skills
+                            Skill Gaps Detected
                          </h3>
                          {selectedMatch.missingSkills.length > 0 ? (
-                           <div className="flex flex-wrap gap-2">
+                           <div className="flex flex-wrap gap-3">
                              {selectedMatch.missingSkills.map(skill => (
-                               <span key={skill} className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-sm font-medium">
+                               <span key={skill} className="px-4 py-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-sm font-semibold shadow-sm">
                                  {skill}
                                </span>
                              ))}
                            </div>
                          ) : (
-                           <p className="text-green-600 flex items-center gap-2">
-                             <CheckCircle className="w-5 h-5" />
-                             You have all the required core skills!
-                           </p>
+                           <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
+                             <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                               <CheckCircle className="w-6 h-6" />
+                             </div>
+                             <p className="text-green-800 font-medium">Excellent! You have all the core skills listed.</p>
+                             <p className="text-green-600 text-sm mt-1">Consider advanced courses to stand out even more.</p>
+                           </div>
                          )}
                        </div>
 
+                       {/* Course Recommendations */}
                        <div>
-                         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                           <TrendingUp className="w-5 h-5 text-sa-green" />
-                           Recommended Upskilling Path
+                         <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                           <BookOpen className="w-5 h-5 text-sa-green" />
+                           Recommended Learning Path
                          </h3>
-                         <div className="grid gap-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            {selectedMatch.recommendedCourses?.map((course, idx) => (
-                             <div key={idx} className="group border border-gray-200 rounded-xl p-5 hover:border-sa-green/50 hover:shadow-lg transition-all bg-white">
-                               <div className="flex justify-between items-start">
-                                 <div>
-                                   <div className="text-xs font-bold text-sa-green uppercase tracking-wide mb-1">{course.provider}</div>
-                                   <h4 className="font-bold text-gray-900 text-lg group-hover:text-sa-green transition-colors">{course.title}</h4>
-                                   <p className="text-sm text-gray-500 mt-1">{course.description}</p>
+                             <div key={idx} className="group flex flex-col justify-between border border-gray-200 rounded-xl p-5 hover:border-sa-green/50 hover:shadow-lg transition-all bg-white">
+                               <div>
+                                 <div className="flex justify-between items-start mb-2">
+                                   <div className="text-xs font-bold text-white bg-sa-green px-2 py-1 rounded">{course.provider}</div>
+                                   <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">{course.cost}</span>
                                  </div>
-                                 <div className="text-right shrink-0">
-                                   <div className="font-semibold text-gray-900">{course.cost}</div>
-                                   <div className="text-xs text-gray-500">{course.duration}</div>
-                                 </div>
+                                 <h4 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-sa-green transition-colors line-clamp-2">{course.title}</h4>
+                                 <p className="text-sm text-gray-500 line-clamp-3 mb-4">{course.description}</p>
                                </div>
-                               <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                                  <span className="text-xs text-gray-400">Online Certification</span>
-                                  <a href={course.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700">
-                                    Start Learning <ArrowRight className="w-4 h-4" />
+                               
+                               <div className="pt-4 border-t border-gray-100 mt-auto flex items-center justify-between">
+                                  <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-sa-gold"></div> {course.duration}
+                                  </span>
+                                  <a href={course.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-800">
+                                    Enroll <ChevronRight className="w-4 h-4" />
                                   </a>
                                </div>
                              </div>
                            ))}
-                           {(!selectedMatch.recommendedCourses || selectedMatch.recommendedCourses.length === 0) && (
-                             <p className="text-gray-500 italic">No specific courses found based on current analysis.</p>
+                           {(!selectedMatch.recommendedCourses || selectedMatch.recommendedCourses.length === 0) && selectedMatch.missingSkills.length > 0 && (
+                             <div className="col-span-2 text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                               <p className="text-gray-500">We couldn't find specific courses for these skills yet.</p>
+                             </div>
                            )}
                          </div>
                        </div>
@@ -474,8 +647,12 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                 </div>
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 bg-white rounded-2xl border border-gray-100 p-12">
-                Select a job from the left to view details
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 p-12 bg-gray-50/50">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                  <Search className="w-10 h-10 text-gray-300" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-600">No Job Selected</h3>
+                <p className="text-sm">Select a job from the list to view match details and apply.</p>
               </div>
             )}
           </div>
@@ -484,8 +661,6 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
     </div>
   );
 }
-
-// --- Main Application Component ---
 
 export default function App() {
   const [view, setView] = useState<'home' | 'analyze' | 'results'>('home');

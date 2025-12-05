@@ -13,7 +13,11 @@ import {
   Loader2,
   FileText,
   X,
-  File
+  File,
+  Coins,
+  ExternalLink,
+  Share2,
+  ChevronRight
 } from 'lucide-react';
 
 export {
@@ -31,5 +35,9 @@ export {
   Loader2,
   FileText,
   X,
-  File
+  File,
+  Coins,
+  ExternalLink,
+  Share2,
+  ChevronRight
 };

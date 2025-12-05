@@ -12,6 +12,7 @@ export interface Job {
   salaryRange: string;
   description: string;
   requiredSkills: string[];
+  applicationUrl: string;
 }
 
 export interface Course {
