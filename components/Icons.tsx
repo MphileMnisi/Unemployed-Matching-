@@ -17,7 +17,8 @@ import {
   Coins,
   ExternalLink,
   Share2,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from 'lucide-react';
 
 export {
@@ -39,5 +40,6 @@ export {
   Coins,
   ExternalLink,
   Share2,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 };
