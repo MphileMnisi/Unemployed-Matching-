@@ -1,0 +1,35 @@
+import { 
+  Briefcase, 
+  UploadCloud, 
+  CheckCircle, 
+  AlertCircle, 
+  TrendingUp, 
+  BookOpen, 
+  MapPin, 
+  DollarSign, 
+  Search,
+  ArrowRight,
+  BrainCircuit,
+  Loader2,
+  FileText,
+  X,
+  File
+} from 'lucide-react';
+
+export {
+  Briefcase, 
+  UploadCloud, 
+  CheckCircle, 
+  AlertCircle, 
+  TrendingUp, 
+  BookOpen, 
+  MapPin, 
+  DollarSign, 
+  Search,
+  ArrowRight,
+  BrainCircuit,
+  Loader2,
+  FileText,
+  X,
+  File
+};
