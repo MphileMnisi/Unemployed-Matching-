@@ -4,6 +4,11 @@ export interface Skill {
   level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
 }
 
+export interface ApplicationLink {
+  source: 'LinkedIn' | 'Pnet' | 'Indeed';
+  url: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -13,8 +18,7 @@ export interface Job {
   salaryRange: string;
   description: string;
   requiredSkills: string[];
-  applicationUrl: string;
-  source: 'LinkedIn' | 'Pnet';
+  applicationLinks: ApplicationLink[];
 }
 
 export interface Course {

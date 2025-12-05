@@ -20,7 +20,7 @@ import {
   Share2,
   ChevronRight
 } from './components/Icons';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MOCK_JOBS, INITIAL_RESUME_TEXT } from './constants';
 import { parseResume, matchJobs } from './services/geminiService';
 import { Job, CandidateProfile, MatchResult } from './types';
@@ -94,11 +94,12 @@ const Hero = ({ onStart }: { onStart: () => void }) => (
 );
 
 const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: CandidateProfile, matches: MatchResult[]) => void }) => {
-  const [resumeText, setResumeText] = useState(INITIAL_RESUME_TEXT);
+  const [resumeText, setResumeText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [stage, setStage] = useState<'idle' | 'parsing' | 'matching'>('idle');
+  const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   
-  // State to store file details including optional extracted text for non-PDF files
+  // State to store file details
   const [selectedFile, setSelectedFile] = useState<{ 
     name: string; 
     data?: string; 
@@ -126,7 +127,7 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        // Remove base64 prefix: "data:application/pdf;base64,"
+        // Remove base64 prefix
         const base64Data = result.split(',')[1];
         setSelectedFile({
           name: file.name,
@@ -142,12 +143,11 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
       reader.onload = async (event) => {
         const arrayBuffer = event.target?.result as ArrayBuffer;
         try {
-          // Extract text from DOCX
           const result = await mammoth.extractRawText({ arrayBuffer });
           setSelectedFile({
             name: file.name,
             mimeType: file.type,
-            extractedText: result.value // The raw text
+            extractedText: result.value
           });
         } catch (error) {
           console.error("Error reading Word file:", error);
@@ -180,16 +180,13 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
   };
 
   const handleAnalyze = async () => {
-    if (!resumeText.trim() && !selectedFile) return;
+    if ((inputMode === 'text' && !resumeText.trim()) || (inputMode === 'file' && !selectedFile)) return;
     setIsAnalyzing(true);
     setStage('parsing');
 
     try {
-      // 1. Prepare Input
-      // If we have extracted text (from DOCX or TXT), send it as text.
-      // If we have a PDF, send the base64 data.
       let input;
-      if (selectedFile) {
+      if (inputMode === 'file' && selectedFile) {
         if (selectedFile.extractedText) {
            input = { text: `FileName: ${selectedFile.name}\n\n${selectedFile.extractedText}` };
         } else if (selectedFile.data) {
@@ -203,11 +200,7 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
         
       const profile = await parseResume(input);
       setStage('matching');
-
-      // 2. Match Jobs
       const matches = await matchJobs(profile, MOCK_JOBS);
-      
-      // 3. Complete
       onAnalysisComplete(profile, matches);
     } catch (error) {
       console.error(error);
@@ -222,81 +215,93 @@ const Analyzer = ({ onAnalysisComplete }: { onAnalysisComplete: (profile: Candid
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="p-8 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload or Paste Your CV</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Your CV</h2>
           <p className="text-gray-500">We'll extract your skills and match you with live opportunities in South Africa.</p>
         </div>
         
         <div className="p-8 bg-gray-50/50">
           
-          {/* File Upload Area */}
-          <div className="mb-6">
-            {!selectedFile ? (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer group relative border-2 border-dashed border-gray-300 rounded-xl p-8 transition-all hover:border-brand-500 hover:bg-brand-50 flex flex-col items-center justify-center text-center"
-              >
-                <div className="bg-blue-50 p-4 rounded-full mb-4 group-hover:bg-white group-hover:scale-110 transition-transform shadow-sm">
-                  <UploadCloud className="w-8 h-8 text-brand-600" />
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">Click to upload or drag and drop</h3>
-                <div className="text-xs text-gray-500 space-y-1">
-                  <p>Supported formats: <span className="font-medium text-gray-700">PDF, Word (.docx), TXT</span></p>
-                  <p>Maximum file size: <span className="font-medium text-gray-700">5MB</span></p>
-                </div>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  accept=".pdf,.docx,.txt"
-                  className="hidden" 
-                />
-              </div>
-            ) : (
-              <div className="bg-white border border-brand-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="bg-brand-100 p-2 rounded-lg">
-                    <File className="w-5 h-5 text-brand-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                    <p className="text-xs text-green-600 font-medium">Ready for analysis</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={clearFile}
-                  className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+          {inputMode === 'file' ? (
+            <div className="mb-6 animate-fadeIn">
+              {!selectedFile ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="cursor-pointer group relative border-2 border-dashed border-gray-300 rounded-xl p-10 transition-all hover:border-brand-500 hover:bg-brand-50 flex flex-col items-center justify-center text-center bg-white"
                 >
-                  <X className="w-5 h-5" />
+                  <div className="bg-blue-50 p-4 rounded-full mb-4 group-hover:bg-white group-hover:scale-110 transition-transform shadow-sm">
+                    <UploadCloud className="w-10 h-10 text-brand-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Click to upload or drag and drop</h3>
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <p>Supported formats: <span className="font-medium text-gray-700">PDF, Word (.docx), TXT</span></p>
+                    <p>Maximum file size: <span className="font-medium text-gray-700">5MB</span></p>
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept=".pdf,.docx,.txt"
+                    className="hidden" 
+                  />
+                </div>
+              ) : (
+                <div className="bg-white border border-brand-200 rounded-xl p-6 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-brand-100 p-3 rounded-xl">
+                      <File className="w-6 h-6 text-brand-600" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-gray-900">{selectedFile.name}</p>
+                      <p className="text-sm text-green-600 font-medium flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Ready for analysis
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={clearFile}
+                    className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="mt-4 text-center">
+                <button 
+                  onClick={() => setInputMode('text')}
+                  className="text-sm text-brand-600 font-medium hover:text-brand-800 hover:underline transition-colors"
+                >
+                  Prefer to paste text manually?
                 </button>
               </div>
-            )}
-          </div>
-
-          <div className="relative flex items-center justify-center mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
             </div>
-            <span className="relative bg-gray-50 px-2 text-xs uppercase text-gray-400 font-medium">Or paste text</span>
-          </div>
-
-          {/* Text Area (Disabled if file selected) */}
-          <div className={`relative transition-opacity ${selectedFile ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <textarea 
-              value={resumeText}
-              onChange={(e) => setResumeText(e.target.value)}
-              className="w-full h-48 p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all font-mono text-sm text-gray-700 resize-none shadow-sm"
-              placeholder="Paste your resume content here if you don't have a file..."
-              disabled={!!selectedFile}
-            />
-          </div>
+          ) : (
+            <div className="mb-6 animate-fadeIn">
+               <div className="flex justify-between items-center mb-2">
+                 <label className="text-sm font-semibold text-gray-700">Paste CV Content</label>
+                 <button 
+                    onClick={() => setInputMode('file')}
+                    className="text-xs text-brand-600 hover:text-brand-800 hover:underline"
+                  >
+                    Switch to File Upload
+                  </button>
+               </div>
+               <textarea 
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  className="w-full h-64 p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all font-mono text-sm text-gray-700 resize-none shadow-sm bg-white"
+                  placeholder="Paste your resume summary and skills here..."
+                />
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end">
             <button 
               onClick={handleAnalyze}
-              disabled={isAnalyzing || (!selectedFile && !resumeText.trim())}
+              disabled={isAnalyzing || (inputMode === 'file' ? !selectedFile : !resumeText.trim())}
               className={`
                 inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white shadow-lg transition-all
-                ${isAnalyzing || (!selectedFile && !resumeText.trim()) 
+                ${isAnalyzing || (inputMode === 'file' ? !selectedFile : !resumeText.trim())
                   ? 'bg-gray-400 cursor-not-allowed shadow-none' 
                   : 'bg-brand-600 hover:bg-brand-700 hover:shadow-brand-500/25'}
               `}
@@ -357,11 +362,19 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
   const selectedJob = MOCK_JOBS.find(j => j.id === selectedMatch?.jobId);
   const sortedMatches = [...matches].sort((a, b) => b.matchScore - a.matchScore);
 
-  // Data for chart
-  const skillsData = profile.extractedSkills.map(s => ({
-    name: s.name,
-    value: s.level === 'Expert' ? 100 : s.level === 'Advanced' ? 75 : s.level === 'Intermediate' ? 50 : 25
-  })).slice(0, 6);
+  // Data for chart: Aggregate skills by level
+  const skillLevelCounts = profile.extractedSkills.reduce((acc, skill) => {
+    acc[skill.level] = (acc[skill.level] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pieData = Object.entries(skillLevelCounts).map(([name, value]) => ({ name, value }));
+  const COLORS: Record<string, string> = { 
+    'Expert': '#059669', // Green
+    'Advanced': '#0ea5e9', // Blue
+    'Intermediate': '#eab308', // Yellow
+    'Beginner': '#94a3b8' // Gray
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -430,9 +443,13 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                         <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center gap-1">
                            <MapPin className="w-3 h-3"/> {job.location.split(',')[0]}
                         </span>
-                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center gap-1">
-                           {job.source === 'LinkedIn' ? 'LinkedIn' : 'Pnet'}
-                        </span>
+                        <div className="flex gap-1">
+                          {job.applicationLinks.map(link => (
+                            <span key={link.source} className="text-[8px] bg-gray-100 text-gray-500 px-1 rounded border border-gray-200">
+                              {link.source.charAt(0)}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -466,9 +483,6 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                        <span className="px-2.5 py-0.5 rounded-full bg-gray-50 text-gray-600 text-xs font-medium border border-gray-100 flex items-center gap-1">
                          <Coins className="w-3 h-3" /> {selectedJob.salaryRange}
                        </span>
-                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1 ${selectedJob.source === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                         Via {selectedJob.source}
-                       </span>
                     </div>
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
                     <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
@@ -478,36 +492,53 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4">
-                     <MatchScore score={selectedMatch.matchScore} />
-                     <a 
-                       href={selectedJob.applicationUrl} 
-                       target="_blank" 
-                       rel="noreferrer"
-                       className={`hidden md:flex flex-col items-center justify-center text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg group
-                         ${selectedJob.source === 'LinkedIn' ? 'bg-[#0077b5] hover:bg-[#005e93] shadow-blue-500/25' : 'bg-[#e03c31] hover:bg-[#c42b20] shadow-red-500/25'}
-                       `}
-                     >
-                       <span className="flex items-center gap-2">
-                         Apply on {selectedJob.source} <ExternalLink className="w-4 h-4" />
-                       </span>
-                       <span className="text-[10px] opacity-80 font-normal">Opens in new tab</span>
-                     </a>
+                  <div className="flex flex-col items-end gap-3">
+                     <div className="flex items-center gap-4 mb-2">
+                       <div className="text-right hidden md:block">
+                         <div className="text-xs text-gray-500 uppercase font-semibold">Match Score</div>
+                         <div className="text-sm font-medium text-gray-400">Based on profile</div>
+                       </div>
+                       <MatchScore score={selectedMatch.matchScore} />
+                     </div>
+                     
+                     <div className="flex gap-2">
+                        {selectedJob.applicationLinks.map(link => (
+                          <a 
+                             key={link.source}
+                             href={link.url} 
+                             target="_blank" 
+                             rel="noreferrer"
+                             className={`
+                               flex items-center gap-2 text-white px-3 py-2 rounded-lg font-bold text-xs transition-all shadow-md hover:-translate-y-0.5
+                               ${link.source === 'LinkedIn' ? 'bg-[#0077b5] hover:bg-[#005e93]' : 
+                                 link.source === 'Pnet' ? 'bg-[#e03c31] hover:bg-[#c42b20]' : 
+                                 'bg-[#2557a7] hover:bg-[#1d4382]'}
+                             `}
+                           >
+                             {link.source} <ExternalLink className="w-3 h-3" />
+                           </a>
+                        ))}
+                     </div>
                   </div>
                 </div>
                 
-                {/* Mobile Apply Button (only visible on small screens) */}
-                <div className="md:hidden p-4 border-b border-gray-100">
-                   <a 
-                     href={selectedJob.applicationUrl} 
-                     target="_blank" 
-                     rel="noreferrer"
-                     className={`w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-bold shadow-md
-                       ${selectedJob.source === 'LinkedIn' ? 'bg-[#0077b5]' : 'bg-[#e03c31]'}
-                     `}
-                   >
-                     Apply on {selectedJob.source} <ExternalLink className="w-4 h-4" />
-                   </a>
+                {/* Mobile Apply Buttons (only visible on small screens) */}
+                <div className="md:hidden p-4 border-b border-gray-100 grid grid-cols-3 gap-2">
+                   {selectedJob.applicationLinks.map(link => (
+                      <a 
+                        key={link.source}
+                        href={link.url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className={`flex items-center justify-center gap-1 text-white py-2 rounded-lg font-bold text-xs shadow-sm
+                          ${link.source === 'LinkedIn' ? 'bg-[#0077b5]' : 
+                            link.source === 'Pnet' ? 'bg-[#e03c31]' : 
+                            'bg-[#2557a7]'}
+                        `}
+                      >
+                        {link.source} <ExternalLink className="w-3 h-3" />
+                      </a>
+                   ))}
                 </div>
 
                 {/* Tabs */}
@@ -551,11 +582,8 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                             <p className="text-gray-600 text-sm leading-7">
                               {selectedJob.description}
                             </p>
-                         </div>
-
-                         {/* Skills Visualization */}
-                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b pb-2">Skill Requirements</h3>
+                            
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 mt-8 border-b pb-2">Skill Requirements</h3>
                             <div className="flex flex-wrap gap-2 mb-6">
                               {selectedJob.requiredSkills.map(skill => {
                                 const hasSkill = !selectedMatch.missingSkills.includes(skill);
@@ -572,21 +600,47 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                                 );
                               })}
                             </div>
+                         </div>
 
-                            <h4 className="text-xs font-bold text-gray-500 mb-3">Your Profile Strength</h4>
-                            <div className="h-40 w-full bg-white rounded-lg border border-gray-100 p-2">
+                         {/* Profile Strength Pie Chart */}
+                         <div>
+                            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b pb-2">Your Profile Strength</h4>
+                            <div className="h-64 w-full bg-white rounded-xl border border-gray-100 p-4 relative">
                               <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={skillsData} layout="vertical" margin={{ left: 0 }}>
-                                  <XAxis type="number" hide domain={[0, 100]} />
-                                  <YAxis dataKey="name" type="category" width={90} tick={{fontSize: 10, fill: '#64748b'}} interval={0} />
-                                  <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                  <Bar dataKey="value" barSize={12} radius={[0, 4, 4, 0]}>
-                                    {skillsData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill="#0ea5e9" />
+                                <PieChart>
+                                  <Pie
+                                    data={pieData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    {pieData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#94a3b8'} stroke="none" />
                                     ))}
-                                  </Bar>
-                                </BarChart>
+                                  </Pie>
+                                  <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)' }}
+                                    itemStyle={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}
+                                  />
+                                  <Legend 
+                                    verticalAlign="bottom" 
+                                    height={36} 
+                                    iconType="circle"
+                                    iconSize={8}
+                                    formatter={(value) => <span className="text-xs font-medium text-gray-600 ml-1">{value}</span>}
+                                  />
+                                </PieChart>
                               </ResponsiveContainer>
+                              {/* Center Text */}
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none mb-8">
+                                <div className="text-center">
+                                  <span className="block text-2xl font-bold text-brand-900">{profile.extractedSkills.length}</span>
+                                  <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Skills</span>
+                                </div>
+                              </div>
                             </div>
                          </div>
                       </div>
