@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Briefcase, 
@@ -429,6 +430,9 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                         <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center gap-1">
                            <MapPin className="w-3 h-3"/> {job.location.split(',')[0]}
                         </span>
+                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center gap-1">
+                           {job.source === 'LinkedIn' ? 'LinkedIn' : 'Pnet'}
+                        </span>
                       </div>
                     </div>
 
@@ -462,6 +466,9 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                        <span className="px-2.5 py-0.5 rounded-full bg-gray-50 text-gray-600 text-xs font-medium border border-gray-100 flex items-center gap-1">
                          <Coins className="w-3 h-3" /> {selectedJob.salaryRange}
                        </span>
+                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1 ${selectedJob.source === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                         Via {selectedJob.source}
+                       </span>
                     </div>
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
                     <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
@@ -477,10 +484,12 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                        href={selectedJob.applicationUrl} 
                        target="_blank" 
                        rel="noreferrer"
-                       className="hidden md:flex flex-col items-center justify-center bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-brand-500/25 group"
+                       className={`hidden md:flex flex-col items-center justify-center text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg group
+                         ${selectedJob.source === 'LinkedIn' ? 'bg-[#0077b5] hover:bg-[#005e93] shadow-blue-500/25' : 'bg-[#e03c31] hover:bg-[#c42b20] shadow-red-500/25'}
+                       `}
                      >
                        <span className="flex items-center gap-2">
-                         Apply Now <ExternalLink className="w-4 h-4" />
+                         Apply on {selectedJob.source} <ExternalLink className="w-4 h-4" />
                        </span>
                        <span className="text-[10px] opacity-80 font-normal">Opens in new tab</span>
                      </a>
@@ -493,9 +502,11 @@ const ResultsDashboard = ({ profile, matches, onReset }: { profile: CandidatePro
                      href={selectedJob.applicationUrl} 
                      target="_blank" 
                      rel="noreferrer"
-                     className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white py-3 rounded-xl font-bold shadow-md"
+                     className={`w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-bold shadow-md
+                       ${selectedJob.source === 'LinkedIn' ? 'bg-[#0077b5]' : 'bg-[#e03c31]'}
+                     `}
                    >
-                     Apply Now <ExternalLink className="w-4 h-4" />
+                     Apply on {selectedJob.source} <ExternalLink className="w-4 h-4" />
                    </a>
                 </div>
 
