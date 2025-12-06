@@ -1,3 +1,4 @@
+
 import { 
   Briefcase, 
   UploadCloud, 
@@ -18,7 +19,11 @@ import {
   ExternalLink,
   Share2,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Users,
+  Plus,
+  LayoutDashboard,
+  Bell
 } from 'lucide-react';
 
 export {
@@ -41,5 +46,9 @@ export {
   ExternalLink,
   Share2,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Users,
+  Plus,
+  LayoutDashboard,
+  Bell
 };

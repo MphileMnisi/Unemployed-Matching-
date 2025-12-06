@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Briefcase, 
@@ -18,7 +19,11 @@ import {
   ExternalLink,
   Share2,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Users,
+  Plus,
+  LayoutDashboard,
+  Bell
 } from './components/Icons';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MOCK_JOBS, INITIAL_RESUME_TEXT } from './constants';
@@ -29,7 +34,7 @@ import mammoth from 'mammoth';
 // --- Components ---
 
 interface HeaderProps {
-  onNavigate: (view: 'home' | 'analyze' | 'results', tab?: 'overview' | 'upskill') => void;
+  onNavigate: (view: 'home' | 'analyze' | 'results' | 'employer', tab?: 'overview' | 'upskill') => void;
   currentView: string;
 }
 
@@ -68,8 +73,12 @@ const Header = ({ onNavigate, currentView }: HeaderProps) => (
         </button>
       </nav>
       <button 
-        onClick={() => alert("Employer Portal: This feature would allow companies to post jobs and search for candidates.")}
-        className="bg-brand-900/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-brand-800 transition-all shadow-lg hover:shadow-brand-900/20"
+        onClick={() => onNavigate('employer')}
+        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-lg 
+          ${currentView === 'employer' 
+            ? 'bg-brand-900 text-white ring-2 ring-brand-700' 
+            : 'bg-brand-900/90 backdrop-blur-sm text-white hover:bg-brand-800 hover:shadow-brand-900/20'}
+        `}
       >
         For Employers
       </button>
@@ -792,8 +801,273 @@ const ResultsDashboard = ({
   );
 }
 
+const EmployerDashboard = () => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'post-job' | 'candidates'>('dashboard');
+  const [isPosting, setIsPosting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handlePostJob = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPosting(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsPosting(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    }, 1500);
+  };
+
+  const mockCandidates = [
+    { name: 'Thabo Mbeki', role: 'Senior React Developer', skills: ['React', 'TypeScript', 'Node.js'], exp: '5 years', location: 'Cape Town' },
+    { name: 'Sarah James', role: 'Data Scientist', skills: ['Python', 'SQL', 'Machine Learning'], exp: '3 years', location: 'Johannesburg' },
+    { name: 'Lerato Kgosana', role: 'UX/UI Designer', skills: ['Figma', 'Adobe XD', 'Prototyping'], exp: '4 years', location: 'Remote' },
+    { name: 'Sipho Nkosi', role: 'Cloud Engineer', skills: ['AWS', 'Docker', 'Kubernetes'], exp: '6 years', location: 'Durban' },
+  ];
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+           <h1 className="text-3xl font-bold text-gray-900">Employer Portal</h1>
+           <p className="text-gray-600">Manage your jobs and find the best talent.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="bg-white/60 p-2 rounded-full shadow-sm cursor-pointer hover:bg-white transition-colors">
+            <Bell className="w-5 h-5 text-gray-600" />
+          </div>
+          <div className="w-10 h-10 rounded-full bg-brand-900 text-white flex items-center justify-center font-bold shadow-md">
+            TC
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Sidebar Navigation */}
+        <div className="md:col-span-1 space-y-2">
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all flex items-center gap-3
+              ${activeTab === 'dashboard' ? 'bg-brand-900 text-white shadow-lg' : 'bg-white/40 hover:bg-white/60 text-gray-700'}
+            `}
+          >
+            <LayoutDashboard className="w-5 h-5" /> Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('post-job')}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all flex items-center gap-3
+              ${activeTab === 'post-job' ? 'bg-brand-900 text-white shadow-lg' : 'bg-white/40 hover:bg-white/60 text-gray-700'}
+            `}
+          >
+            <Plus className="w-5 h-5" /> Post a Job
+          </button>
+          <button 
+            onClick={() => setActiveTab('candidates')}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all flex items-center gap-3
+              ${activeTab === 'candidates' ? 'bg-brand-900 text-white shadow-lg' : 'bg-white/40 hover:bg-white/60 text-gray-700'}
+            `}
+          >
+            <Users className="w-5 h-5" /> Find Talent
+          </button>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="md:col-span-3">
+          
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6 animate-fadeIn">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white/70 backdrop-blur p-6 rounded-2xl border border-white/50 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Briefcase className="w-6 h-6"/></div>
+                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">+2 this week</span>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900">5</h3>
+                  <p className="text-sm text-gray-500">Active Job Listings</p>
+                </div>
+                <div className="bg-white/70 backdrop-blur p-6 rounded-2xl border border-white/50 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><Users className="w-6 h-6"/></div>
+                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">+12 new</span>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900">142</h3>
+                  <p className="text-sm text-gray-500">Total Applicants</p>
+                </div>
+                <div className="bg-white/70 backdrop-blur p-6 rounded-2xl border border-white/50 shadow-sm">
+                   <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><MessageCircle className="w-6 h-6"/></div>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900">8</h3>
+                  <p className="text-sm text-gray-500">Interviews Scheduled</p>
+                </div>
+              </div>
+
+              {/* Recent Jobs Table Mock */}
+              <div className="bg-white/70 backdrop-blur rounded-2xl border border-white/50 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-gray-900">Recent Job Postings</h3>
+                  <button className="text-sm text-brand-600 font-medium hover:underline">View All</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-3">Job Title</th>
+                        <th className="px-6 py-3">Applicants</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Posted</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {[
+                        { title: 'Senior React Developer', applicants: 45, status: 'Active', posted: '2 days ago' },
+                        { title: 'UX Designer', applicants: 23, status: 'Active', posted: '5 days ago' },
+                        { title: 'Product Manager', applicants: 12, status: 'Closed', posted: '1 week ago' },
+                      ].map((job, i) => (
+                        <tr key={i} className="hover:bg-white/50 transition-colors">
+                          <td className="px-6 py-3 font-medium text-gray-900">{job.title}</td>
+                          <td className="px-6 py-3">
+                            <div className="flex -space-x-2">
+                               <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white"></div>
+                               <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white"></div>
+                               <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-[8px] text-white font-bold">+{job.applicants - 2}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${job.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-gray-500">{job.posted}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'post-job' && (
+             <div className="bg-white/70 backdrop-blur rounded-2xl border border-white/50 shadow-sm p-8 animate-fadeIn">
+               <h2 className="text-xl font-bold text-gray-900 mb-6">Create a New Job Listing</h2>
+               
+               {showSuccess ? (
+                 <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center animate-fadeIn">
+                   <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                     <CheckCircle className="w-6 h-6" />
+                   </div>
+                   <h3 className="text-lg font-bold text-gray-900">Job Posted Successfully!</h3>
+                   <p className="text-gray-600">Your listing is now live and candidates will start matching soon.</p>
+                 </div>
+               ) : (
+                 <form onSubmit={handlePostJob} className="space-y-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                       <input required type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white/50" placeholder="e.g. Senior Frontend Engineer" />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                       <input required type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white/50" placeholder="e.g. Cape Town (Remote)" />
+                     </div>
+                   </div>
+
+                   <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
+                      <textarea required rows={4} className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white/50" placeholder="Describe the role responsibilities and requirements..."></textarea>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Salary Range</label>
+                        <div className="relative">
+                          <Coins className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                          <input required type="text" className="w-full pl-9 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white/50" placeholder="e.g. R45,000 - R60,000" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
+                        <select className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white/50">
+                          <option>Full-time</option>
+                          <option>Part-time</option>
+                          <option>Contract</option>
+                          <option>Freelance</option>
+                        </select>
+                      </div>
+                   </div>
+
+                   <div className="pt-4 border-t border-gray-200">
+                     <button 
+                       type="submit" 
+                       disabled={isPosting}
+                       className="w-full bg-brand-900 text-white font-bold py-3 rounded-xl hover:bg-brand-800 transition-colors shadow-lg flex justify-center items-center gap-2"
+                     >
+                       {isPosting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                       {isPosting ? 'Posting Job...' : 'Post Job Now'}
+                     </button>
+                   </div>
+                 </form>
+               )}
+             </div>
+          )}
+
+          {activeTab === 'candidates' && (
+             <div className="space-y-6 animate-fadeIn">
+                <div className="bg-white/70 backdrop-blur p-4 rounded-xl border border-white/50 shadow-sm flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <input type="text" className="w-full pl-10 px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 bg-white/80" placeholder="Search by skill, role, or name..." />
+                  </div>
+                  <button className="bg-brand-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-brand-800">Search</button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {mockCandidates.map((candidate, i) => (
+                    <div key={i} className="bg-white/70 backdrop-blur p-6 rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                           <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-lg">
+                             {candidate.name.split(' ').map(n => n[0]).join('')}
+                           </div>
+                           <div>
+                             <h3 className="font-bold text-gray-900">{candidate.name}</h3>
+                             <p className="text-sm text-gray-500">{candidate.role}</p>
+                           </div>
+                        </div>
+                        <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded">{candidate.exp}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {candidate.skills.map(skill => (
+                          <span key={skill} className="px-2 py-1 bg-brand-50 text-brand-700 text-xs rounded border border-brand-100 font-medium">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                         <div className="flex items-center gap-1 text-xs text-gray-500">
+                           <MapPin className="w-3 h-3" /> {candidate.location}
+                         </div>
+                         <button className="text-sm font-bold text-brand-600 hover:text-brand-800 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                           View Profile <ChevronRight className="w-4 h-4" />
+                         </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+             </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
-  const [view, setView] = useState<'home' | 'analyze' | 'results'>('home');
+  const [view, setView] = useState<'home' | 'analyze' | 'results' | 'employer'>('home');
   const [analysisData, setAnalysisData] = useState<{profile: CandidateProfile, matches: MatchResult[]} | null>(null);
   const [resultsTab, setResultsTab] = useState<'overview' | 'upskill'>('overview');
 
@@ -810,11 +1084,13 @@ export default function App() {
     setView('analyze');
   };
 
-  const handleNavigate = (targetView: 'home' | 'analyze' | 'results', tab?: 'overview' | 'upskill') => {
+  const handleNavigate = (targetView: 'home' | 'analyze' | 'results' | 'employer', tab?: 'overview' | 'upskill') => {
     if (targetView === 'home') {
       setView('home');
     } else if (targetView === 'analyze') {
       setView('analyze');
+    } else if (targetView === 'employer') {
+      setView('employer');
     } else if (targetView === 'results') {
       if (analysisData) {
         setView('results');
@@ -832,6 +1108,7 @@ export default function App() {
       <main>
         {view === 'home' && <Hero onStart={handleStart} />}
         {view === 'analyze' && <Analyzer onAnalysisComplete={handleAnalysisComplete} />}
+        {view === 'employer' && <EmployerDashboard />}
         {view === 'results' && analysisData && (
           <ResultsDashboard 
             profile={analysisData.profile} 
