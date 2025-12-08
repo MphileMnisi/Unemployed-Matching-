@@ -99,63 +99,141 @@ const Hero = ({ onStart }: { onStart: () => void }) => (
     </div>
 
     <div className="container mx-auto px-4 relative z-10">
-      <div className="max-w-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/50 backdrop-blur-md border border-blue-200 text-brand-900 text-xs font-semibold mb-6 shadow-sm">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-          </span>
-          AI-Powered Employment Engine
-        </div>
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 mb-6 drop-shadow-sm">
-          Connecting South Africa's Talent to <span className="text-brand-600">Opportunity</span>
-        </h1>
-        <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-lg">
-          Don't let skills gaps hold you back. Our AI analyzes your potential, matches you with the right jobs across SA, and builds a custom learning path to get you hired.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 mb-12">
-          <button 
-            onClick={onStart}
-            className="inline-flex items-center justify-center gap-2 bg-brand-600/90 backdrop-blur text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-all shadow-lg hover:shadow-brand-500/25 ring-1 ring-white/20"
-          >
-            <UploadCloud className="w-5 h-5" />
-            Analyze My CV
-          </button>
-          <button 
-            onClick={onStart}
-            className="inline-flex items-center justify-center gap-2 bg-white/60 backdrop-blur-md text-gray-700 border border-white/50 px-6 py-3.5 rounded-xl font-semibold hover:bg-white/80 transition-colors shadow-sm"
-          >
-            <Search className="w-5 h-5" />
-            Browse Jobs
-          </button>
+      <div className="grid lg:grid-cols-2 gap-12 items-center">
+        {/* Left Column: Text Content */}
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/50 backdrop-blur-md border border-blue-200 text-brand-900 text-xs font-semibold mb-6 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+            </span>
+            AI-Powered Employment Engine
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 mb-6 drop-shadow-sm">
+            Connecting South Africa's Talent to <span className="text-brand-600">Opportunity</span>
+          </h1>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-lg">
+            Don't let skills gaps hold you back. Our AI analyzes your potential, matches you with the right jobs across SA, and builds a custom learning path to get you hired.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <button 
+              onClick={onStart}
+              className="inline-flex items-center justify-center gap-2 bg-brand-600/90 backdrop-blur text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-all shadow-lg hover:shadow-brand-500/25 ring-1 ring-white/20"
+            >
+              <UploadCloud className="w-5 h-5" />
+              Analyze My CV
+            </button>
+            <button 
+              onClick={onStart}
+              className="inline-flex items-center justify-center gap-2 bg-white/60 backdrop-blur-md text-gray-700 border border-white/50 px-6 py-3.5 rounded-xl font-semibold hover:bg-white/80 transition-colors shadow-sm"
+            >
+              <Search className="w-5 h-5" />
+              Browse Jobs
+            </button>
+          </div>
+
+          {/* WhatsApp Integration CTA */}
+          <div className="bg-white/40 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/50 max-w-md transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <MessageCircle className="w-20 h-20 text-green-500" />
+            </div>
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="bg-green-50/80 backdrop-blur p-3 rounded-full shrink-0 shadow-sm">
+                <MessageCircle className="w-6 h-6 text-[#25D366]" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm md:text-base">Get Job Alerts on WhatsApp</h3>
+                <p className="text-gray-600 text-xs md:text-sm mt-1 mb-3">
+                  Upload your CV and receive matched opportunities directly on your phone.
+                </p>
+                <button 
+                  onClick={() => window.open('https://wa.me/27123456789?text=Hi%20Kusasa%2C%20I%20want%20to%20find%20a%20job', '_blank')}
+                  className="inline-flex items-center gap-1.5 bg-[#25D366] text-white px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-[#20bd5a] transition-colors shadow-md"
+                >
+                  Connect Now <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* WhatsApp Integration CTA */}
-        <div className="bg-white/40 backdrop-blur-xl p-5 rounded-2xl shadow-xl border border-white/50 max-w-md transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-             <MessageCircle className="w-20 h-20 text-green-500" />
-          </div>
-          <div className="flex items-start gap-4 relative z-10">
-            <div className="bg-green-50/80 backdrop-blur p-3 rounded-full shrink-0 shadow-sm">
-              <MessageCircle className="w-6 h-6 text-[#25D366]" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm md:text-base">Get Job Alerts on WhatsApp</h3>
-              <p className="text-gray-600 text-xs md:text-sm mt-1 mb-3">
-                Upload your CV and receive matched opportunities directly on your phone.
-              </p>
-              <button 
-                onClick={() => window.open('https://wa.me/27123456789?text=Hi%20Kusasa%2C%20I%20want%20to%20find%20a%20job', '_blank')}
-                className="inline-flex items-center gap-1.5 bg-[#25D366] text-white px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-[#20bd5a] transition-colors shadow-md"
-              >
-                Connect Now <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
+        {/* Right Column: Interesting Visual */}
+        <div className="hidden lg:block relative perspective-1000">
+           <div className="relative z-10 bg-white/30 backdrop-blur-md border border-white/40 rounded-3xl p-8 shadow-2xl hover:rotate-1 transition-transform duration-500 transform">
+              {/* Fake UI Header */}
+              <div className="flex items-center justify-between mb-8 border-b border-white/30 pb-4">
+                 <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                 </div>
+                 <div className="text-xs font-mono text-gray-600 font-bold tracking-wider">KUSASA_AI_ENGINE.exe</div>
+              </div>
+
+              {/* Core Visual */}
+              <div className="relative h-72 flex items-center justify-center">
+                 {/* Central Node */}
+                 <div className="relative z-20 w-24 h-24 bg-brand-600 rounded-full flex items-center justify-center shadow-xl shadow-brand-500/30 ring-4 ring-white/30">
+                    <BrainCircuit className="w-12 h-12 text-white animate-pulse" />
+                 </div>
+                 
+                 {/* Orbiting Nodes */}
+                 <div className="absolute inset-0 animate-[spin_8s_linear_infinite]">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg text-xs font-bold text-brand-700 flex items-center gap-2 border border-white/50">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div> React Dev
+                    </div>
+                    <div className="absolute bottom-10 left-0 -translate-x-2 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg text-xs font-bold text-sa-green flex items-center gap-2 border border-white/50">
+                      <div className="w-2 h-2 rounded-full bg-sa-green"></div> Python
+                    </div>
+                    <div className="absolute top-1/2 right-0 translate-x-6 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg text-xs font-bold text-sa-gold flex items-center gap-2 border border-white/50">
+                      <div className="w-2 h-2 rounded-full bg-sa-gold"></div> Data
+                    </div>
+                 </div>
+
+                 {/* Connection Rings */}
+                 <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    <circle cx="50%" cy="50%" r="80" stroke="currentColor" className="text-brand-400/20" strokeWidth="1" fill="none" strokeDasharray="4 4" />
+                    <circle cx="50%" cy="50%" r="130" stroke="currentColor" className="text-brand-300/10" strokeWidth="2" fill="none" />
+                 </svg>
+              </div>
+
+              {/* Bottom Stats */}
+              <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+                 <div className="bg-white/50 rounded-2xl p-3 border border-white/40">
+                    <div className="text-xl font-black text-gray-900">98%</div>
+                    <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Match Rate</div>
+                 </div>
+                 <div className="bg-white/50 rounded-2xl p-3 border border-white/40">
+                    <div className="text-xl font-black text-gray-900">24h</div>
+                    <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Placement</div>
+                 </div>
+                 <div className="bg-white/50 rounded-2xl p-3 border border-white/40">
+                    <div className="text-xl font-black text-gray-900">5k+</div>
+                    <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Profiles</div>
+                 </div>
+              </div>
+
+              {/* Floating Success Card */}
+              <div className="absolute -top-6 -right-6 bg-white/90 backdrop-blur p-4 rounded-2xl shadow-xl animate-[bounce_3s_infinite] z-30 border border-white/60">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shadow-inner">
+                       <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <div className="text-[10px] font-bold text-gray-400 uppercase">Just Matched</div>
+                       <div className="text-sm font-bold text-gray-900">Junior Dev @ TechCape</div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+           
+           {/* Decorative Blobs */}
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-brand-500/20 rounded-full blur-3xl -z-10 animate-pulse"></div>
         </div>
 
       </div>
     </div>
+
     {/* Decorative background elements */}
     <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 blur-3xl opacity-40 pointer-events-none">
       <div className="w-96 h-96 rounded-full bg-sa-green/30 mix-blend-multiply"></div>
