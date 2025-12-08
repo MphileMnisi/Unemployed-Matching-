@@ -22,7 +22,8 @@ import {
   Users,
   Plus,
   LayoutDashboard,
-  Bell
+  Bell,
+  Star
 } from './components/Icons';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MOCK_JOBS, INITIAL_RESUME_TEXT } from './constants';
@@ -741,17 +742,10 @@ const ResultsDashboard = ({
                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.9)' }}
                                     itemStyle={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}
                                   />
-                                  <Legend 
-                                    verticalAlign="bottom" 
-                                    height={36} 
-                                    iconType="circle"
-                                    iconSize={8}
-                                    formatter={(value) => <span className="text-xs font-medium text-gray-600 ml-1">{value}</span>}
-                                  />
                                 </PieChart>
                               </ResponsiveContainer>
                               {/* Center Text */}
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none mb-8">
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="text-center">
                                   <span className="block text-2xl font-bold text-brand-900">{profile.extractedSkills.length}</span>
                                   <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Skills</span>
@@ -860,10 +854,12 @@ const EmployerDashboard = () => {
   };
 
   const mockCandidates = [
-    { name: 'Thabo Mbeki', role: 'Senior React Developer', skills: ['React', 'TypeScript', 'Node.js'], exp: '5 years', location: 'Cape Town' },
-    { name: 'Sarah James', role: 'Data Scientist', skills: ['Python', 'SQL', 'Machine Learning'], exp: '3 years', location: 'Johannesburg' },
-    { name: 'Lerato Kgosana', role: 'UX/UI Designer', skills: ['Figma', 'Adobe XD', 'Prototyping'], exp: '4 years', location: 'Remote' },
-    { name: 'Sipho Nkosi', role: 'Cloud Engineer', skills: ['AWS', 'Docker', 'Kubernetes'], exp: '6 years', location: 'Durban' },
+    { name: 'Thabo Mbeki', role: 'Senior React Developer', skills: ['React', 'TypeScript', 'Node.js', 'Redux'], exp: '5 years', location: 'Cape Town', match: 95 },
+    { name: 'Sarah James', role: 'Data Scientist', skills: ['Python', 'SQL', 'Machine Learning', 'Tableau'], exp: '3 years', location: 'Johannesburg', match: 88 },
+    { name: 'Lerato Kgosana', role: 'UX/UI Designer', skills: ['Figma', 'Adobe XD', 'Prototyping', 'User Research'], exp: '4 years', location: 'Remote', match: 92 },
+    { name: 'Sipho Nkosi', role: 'Cloud Engineer', skills: ['AWS', 'Docker', 'Kubernetes', 'Terraform'], exp: '6 years', location: 'Durban', match: 85 },
+    { name: 'David Naidoo', role: 'Full Stack Developer', skills: ['Java', 'Spring Boot', 'Angular', 'SQL'], exp: '7 years', location: 'Centurion', match: 78 },
+    { name: 'Zandile Dlamini', role: 'Digital Marketer', skills: ['SEO', 'Google Ads', 'Content Strategy', 'Social Media'], exp: '4 years', location: 'Sandton', match: 82 },
   ];
 
   return (
@@ -1061,39 +1057,56 @@ const EmployerDashboard = () => {
                     <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <input type="text" className="w-full pl-10 px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 bg-white/80" placeholder="Search by skill, role, or name..." />
                   </div>
-                  <button className="bg-brand-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-brand-800">Search</button>
+                  <button className="bg-brand-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-brand-800 shadow-lg">Search</button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {mockCandidates.map((candidate, i) => (
-                    <div key={i} className="bg-white/70 backdrop-blur p-6 rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                           <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-lg">
+                    <div key={i} className="group relative bg-white/80 backdrop-blur-xl rounded-2xl border border-white/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                      {/* Top Bar Decoration */}
+                      <div className="h-2 bg-gradient-to-r from-brand-500 to-sa-green w-full"></div>
+                      
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                           <div className="w-14 h-14 bg-gradient-to-br from-brand-100 to-white border border-brand-200 rounded-2xl flex items-center justify-center text-brand-700 font-bold text-xl shadow-inner">
                              {candidate.name.split(' ').map(n => n[0]).join('')}
                            </div>
-                           <div>
-                             <h3 className="font-bold text-gray-900">{candidate.name}</h3>
-                             <p className="text-sm text-gray-500">{candidate.role}</p>
+                           <button className="text-gray-400 hover:text-yellow-400 transition-colors p-1">
+                              <Star className="w-5 h-5" />
+                           </button>
+                        </div>
+
+                        <div className="mb-4">
+                           <h3 className="font-bold text-lg text-gray-900 leading-tight">{candidate.name}</h3>
+                           <p className="text-sm text-brand-600 font-medium">{candidate.role}</p>
+                           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                              <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md"><Briefcase className="w-3 h-3"/> {candidate.exp}</span>
+                              <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md"><MapPin className="w-3 h-3"/> {candidate.location}</span>
                            </div>
                         </div>
-                        <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded">{candidate.exp}</span>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {candidate.skills.map(skill => (
-                          <span key={skill} className="px-2 py-1 bg-brand-50 text-brand-700 text-xs rounded border border-brand-100 font-medium">
-                            {skill}
-                          </span>
-                        ))}
+
+                        <div className="space-y-3">
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Top Skills</p>
+                          <div className="flex flex-wrap gap-2">
+                            {candidate.skills.slice(0, 3).map(skill => (
+                              <span key={skill} className="px-2.5 py-1 bg-brand-50/80 text-brand-700 text-xs rounded-lg border border-brand-100/50 font-medium">
+                                {skill}
+                              </span>
+                            ))}
+                            {candidate.skills.length > 3 && (
+                               <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded-lg border border-gray-100 font-medium">+{candidate.skills.length - 3}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                         <div className="flex items-center gap-1 text-xs text-gray-500">
-                           <MapPin className="w-3 h-3" /> {candidate.location}
+                      <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+                         <div className="flex flex-col">
+                            <span className="text-[10px] uppercase font-bold text-gray-400">Match Potential</span>
+                            <span className="text-sm font-bold text-green-600">{candidate.match}%</span>
                          </div>
-                         <button className="text-sm font-bold text-brand-600 hover:text-brand-800 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                           View Profile <ChevronRight className="w-4 h-4" />
+                         <button className="bg-white text-brand-700 border border-brand-200 hover:bg-brand-50 px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1">
+                           View Profile <ChevronRight className="w-3 h-3" />
                          </button>
                       </div>
                     </div>

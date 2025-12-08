@@ -23,7 +23,8 @@ import {
   Users,
   Plus,
   LayoutDashboard,
-  Bell
+  Bell,
+  Star
 } from 'lucide-react';
 
 export {
@@ -50,5 +51,6 @@ export {
   Users,
   Plus,
   LayoutDashboard,
-  Bell
+  Bell,
+  Star
 };
