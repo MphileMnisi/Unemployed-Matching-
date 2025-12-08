@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Briefcase, 
@@ -88,6 +87,16 @@ const Header = ({ onNavigate, currentView }: HeaderProps) => (
 
 const Hero = ({ onStart }: { onStart: () => void }) => (
   <div className="relative overflow-hidden py-24 sm:py-32">
+    {/* Background Image Layer */}
+    <div className="absolute inset-0 z-0">
+      <img 
+        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRC_ymxEX0mVlJ9khwkzeJfrL32oXFEe-438Q&s" 
+        alt="Background" 
+        className="w-full h-full object-cover opacity-20 mix-blend-overlay"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/50 to-white/80 backdrop-blur-[1px]"></div>
+    </div>
+
     <div className="container mx-auto px-4 relative z-10">
       <div className="max-w-2xl">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/50 backdrop-blur-md border border-blue-200 text-brand-900 text-xs font-semibold mb-6 shadow-sm">
@@ -537,6 +546,27 @@ const ResultsDashboard = ({
                             {job.salaryRange}
                         </div>
                     </div>
+
+                    {match.missingSkills.length > 0 && (
+                      <div className="mb-4 pt-2 border-t border-gray-50 border-dashed">
+                        <div className="flex items-center gap-1 mb-1.5">
+                          <AlertCircle className="w-3 h-3 text-amber-500" />
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Missing Top Skills</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {match.missingSkills.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100/50">
+                              {skill}
+                            </span>
+                          ))}
+                          {match.missingSkills.length > 3 && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-100">
+                              +{match.missingSkills.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
                          <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
